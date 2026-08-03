@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLOKZ Overlay — Config</title>
+  <link rel="stylesheet" href="overlay.css" />
+  <link rel="stylesheet" href="editor.css" />
+</head>
+<body class="editor">
+  <header class="topbar">
+    <h1><span>FLOKZ</span> Overlay — Config</h1>
+    <div class="actions">
+      <button id="btn-reset" class="small">คืนค่าเริ่มต้น</button>
+      <button id="btn-save" class="primary">บันทึก &amp; ใช้งาน</button>
+    </div>
+  </header>
+
+  <div class="profilebar">
+    <label for="profile-select">Profile</label>
+    <select id="profile-select"></select>
+    <button id="btn-new" class="small">＋ ใหม่</button>
+    <button id="btn-rename" class="small">เปลี่ยนชื่อ</button>
+    <button id="btn-delete" class="small danger">ลบ</button>
+
+    <span class="grow"></span>
+
+    <span class="urlbox">
+      <span class="urllabel">Overlay URL</span>
+      <code id="overlay-url">—</code>
+      <button id="btn-copy" class="small">คัดลอก</button>
+      <button id="btn-open" class="small">เปิด ↗</button>
+    </span>
+  </div>
+
+  <main>
+    <section class="stage-wrap">
+      <div class="stage">
+        <div id="preview" class="keyboard edit-canvas"></div>
+        <button id="btn-add-key" class="small">＋ เพิ่มปุ่ม</button>
+      </div>
+      <p class="stage-hint">คลิกที่ปุ่มเพื่อแก้ไข • ลากปุ่มเพื่อจัดตำแหน่งอิสระ • กด Alt ค้างขณะลาก = วางละเอียด</p>
+    </section>
+
+    <aside id="inspector" class="inspector"></aside>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="layout.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>

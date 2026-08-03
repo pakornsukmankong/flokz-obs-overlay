@@ -1,0 +1,9 @@
+node_modules/
+config/
+.DS_Store
+*.log
+
+# Claude Code / local tooling (ไม่เกี่ยวกับตัวโปรเจกต์)
+.agents/
+.claude/
+skills-lock.json
