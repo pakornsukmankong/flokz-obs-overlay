@@ -1,104 +1,193 @@
-# FLOKZ OBS Keyboard Overlay
+<div align="center">
 
-Overlay สำหรับ OBS ที่แสดงคีย์บอร์ดบนหน้าจอ และเมื่อกดปุ่มจริง ปุ่มนั้นจะเล่นอนิเมชั่นกด — ให้ผู้ชมเห็นว่ากำลังกดปุ่มอะไร
+# ⌨️ FLOKZ OBS Keyboard Overlay
 
-## ทำไมต้องมี background service?
+**Overlay คีย์บอร์ดสำหรับ OBS — กดปุ่มจริงบนคีย์บอร์ด ปุ่มบนจอเล่นอนิเมชั่นกดตาม**
+ให้ผู้ชมเห็นสดๆ ว่ากำลังกดปุ่มอะไรอยู่ พื้นหลังโปร่งใส วางทับฉากได้เลย
 
-OBS Browser Source **รับ keyboard event ระดับ global ไม่ได้** เวลาโฟกัสอยู่ที่เกม/แอปอื่น
-โปรเจ็คนี้จึงมี background service (Node.js) คอย hook คีย์บอร์ดจาก OS แล้วส่ง event เข้า overlay ผ่าน WebSocket
+![Node](https://img.shields.io/badge/Node.js-18+-5FA04E?logo=node.js&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-macOS%20·%20Windows-555)
+![No build step](https://img.shields.io/badge/build-none%20·%20vanilla%20JS-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-blue)
+
+</div>
+
+---
+
+## ✨ ฟีเจอร์
+
+- 🎹 **แสดงการกดปุ่มแบบ real-time** — hook คีย์บอร์ดระดับ OS จับได้แม้โฟกัสอยู่ในเกม
+- 🧩 **จัดวางปุ่มอิสระ (free positioning)** — ลากปุ่มไปวางตรงไหนก็ได้ ลบปุ่มหนึ่งไม่ดันปุ่มอื่น
+- 👥 **หลาย profile ต่อเครื่อง** — แต่ละ layout มี overlay URL ของตัวเอง สลับใช้ตามเกมได้
+- 🖱️ **Editor บนเว็บ** — คลิก/ลากแก้ layout สดๆ ไม่ต้องแตะโค้ด บันทึกแล้ว overlay รีโหลดเอง
+- 🎯 **Record keycode** — กดปุ่มจริงเพื่อผูกปุ่ม ไม่ต้องจำเลข keycode
+- 🔒 **ทำงานในเครื่อง 100%** — keystroke ไม่วิ่งผ่านคลาวด์เลย
+- 🪶 **ไม่มี build step** — vanilla JS/CSS ล้วน OBS โหลดตรงได้เลย
+
+---
+
+## 🧠 ทำไมต้องมี background service?
+
+OBS Browser Source **รับ keyboard event ระดับ global ไม่ได้** — เวลาโฟกัสอยู่ที่เกมหรือแอปอื่น
+หน้าเว็บใน OBS จะไม่ได้รับ event ใดๆ โปรเจกต์นี้จึงแยกเป็น 2 ส่วน: service เล็กๆ (Node.js)
+คอย hook คีย์บอร์ดจาก OS แล้วส่ง event เข้า overlay ผ่าน WebSocket
 
 ```
-[ คีย์บอร์ดจริง ] → uiohook → [ Node service ] → WebSocket → [ overlay ใน OBS ]
+┌──────────────────┐   uiohook   ┌───────────────┐  WebSocket  ┌────────────────────┐
+│  คีย์บอร์ดจริง   │ ──────────▶ │  Node service │ ──────────▶ │  overlay ใน OBS    │
+└──────────────────┘             └───────────────┘             └────────────────────┘
 ```
 
-## ติดตั้ง
+---
+
+## 🚀 เริ่มใช้งาน
 
 ```bash
 npm install
-```
-
-## รัน
-
-```bash
 npm start
 ```
 
-จะได้ overlay ที่ **http://localhost:3000**
+เปิดเบราว์เซอร์ไปที่ 👉 **http://localhost:3100**
 
-### macOS — ต้องอนุญาต Accessibility (สำคัญ!)
+| หน้า | URL |
+| --- | --- |
+| Overlay (สำหรับ OBS) | `http://localhost:3100` หรือ `http://localhost:3100/overlay/<id>` |
+| Editor (ตั้งค่า) | `http://localhost:3100/editor.html` |
 
-ถ้าไม่อนุญาต hook จะไม่ได้รับ event (ปุ่มจะไม่ขยับ)
+> 💡 เปลี่ยนพอร์ตได้ด้วย `PORT=4000 npm start`
 
-1. System Settings → Privacy & Security → **Accessibility**
+### 🍎 macOS — ต้องอนุญาต Accessibility (สำคัญ!)
+
+ถ้าไม่อนุญาต hook จะไม่ได้รับ event เลย (ปุ่มบนจอจะไม่ขยับ) — แต่ overlay ยังเสิร์ฟได้ปกติ
+
+1. **System Settings → Privacy & Security → Accessibility**
 2. เปิดสิทธิ์ให้ **Terminal** (หรือแอปที่ใช้รัน `npm start`)
-3. ปิด–เปิด Terminal ใหม่ แล้วรัน `npm start` อีกครั้ง
+3. ปิด–เปิด Terminal ใหม่ แล้ว `npm start` อีกครั้ง — ระบบจะเชื่อมต่อให้อัตโนมัติ
 
-## หลาย profile + overlay URL
+---
 
-รองรับ **หลาย profile ต่อเครื่อง** แต่ละอันมี layout และ overlay URL ของตัวเอง
-(เช่น profile เกม A กับเกม B คนละหน้าตา) — keystroke อยู่ในเครื่อง 100% ไม่วิ่งผ่านคลาวด์
+## 🎬 ตั้งค่าใน OBS
 
-- เปิดหน้า editor → ใช้แถบ **Profile** ด้านบนเพื่อ สร้าง/เปลี่ยนชื่อ/ลบ profile
-- แต่ละ profile มี **Overlay URL** เช่น `http://localhost:3000/overlay/ab12cd` — กด **คัดลอก** เอาไปใส่ OBS
-- แก้ profile ไหน overlay ของ profile นั้นรีโหลดเอง (profile อื่นไม่กระทบ)
+1. เปิด **http://localhost:3100/editor.html** → เลือก profile → กด **คัดลอก** ที่ช่อง Overlay URL
+2. OBS: **Sources → ＋ → Browser**
+3. **URL**: วาง overlay URL ที่คัดลอกมา (เช่น `http://localhost:3100/overlay/ab12cd`)
+   หรือใช้ `http://localhost:3100` เฉยๆ = profile แรก
+4. **Width / Height**: ตั้งให้พอดีกับคีย์บอร์ด (เช่น 900 × 400)
+5. ปิด ☑️ **"Shutdown source when not visible"**
+6. พื้นหลังโปร่งใสอยู่แล้ว วางทับฉากได้ทันที
 
-## ตั้งค่าใน OBS
+---
 
-1. เปิด editor → เลือก profile → กด **คัดลอก** ที่ช่อง Overlay URL
-2. OBS: Sources → **+** → **Browser**
-3. URL: วาง overlay URL ที่คัดลอกมา (เช่น `http://localhost:3000/overlay/ab12cd`)
-   - หรือใช้ `http://localhost:3000` เฉยๆ = profile แรก
-4. Width / Height: ตั้งให้พอดีกับคีย์บอร์ด (เช่น 900 × 400)
-5. ปิด **"Shutdown source when not visible"**
-6. พื้นหลังโปร่งใสอยู่แล้ว วางทับฉากได้เลย
+## 🖌️ แก้ layout ผ่าน Editor (แนะนำ)
 
-## ปรับ layout ปุ่ม — ผ่านหน้าเว็บ Editor (แนะนำ)
+เปิด **http://localhost:3100/editor.html** ขณะ `npm start` ทำงานอยู่
 
-เปิด **http://localhost:3000/editor.html** ในเบราว์เซอร์ (ตอน `npm start` อยู่)
+<table>
+<tr><td>
 
-- เห็นพรีวิวคีย์บอร์ดสดๆ บนพื้นตารางหมากรุก (แทนพื้นโปร่งใสของ OBS)
-- **คลิกปุ่ม** เพื่อแก้ไข: เปลี่ยน label, ปรับความกว้าง, เลือก keycode
-- **ลากปุ่มเพื่อจัดตำแหน่ง** — ลากได้ทั้งภายในแถวและข้ามแถว (มีเส้นบอกตำแหน่งที่จะวาง)
-- **ลากที่จับ ⠿** ทางซ้ายของแถว เพื่อย้ายทั้งแถวขึ้น/ลง
-- **🎯 Record** — กดปุ่มนี้แล้วกดปุ่มจริงบนคีย์บอร์ด ระบบจับ keycode ให้อัตโนมัติ
-  (ต้องมีสิทธิ์ Accessibility)
-- แถบเครื่องมือซ้ายของแต่ละแถว: เพิ่มปุ่ม (＋), เพิ่มช่องว่าง (␣), ลบแถว (🗑)
-- แถบ **Profile** ด้านบน: เลือก/สร้าง/เปลี่ยนชื่อ/ลบ profile + คัดลอก overlay URL
-- กด **บันทึก & ใช้งาน** → overlay ของ profile นั้น **รีโหลดเองอัตโนมัติ** ไม่ต้อง refresh มือ
+**คลิกปุ่มเพื่อแก้ไข** — inspector ทางขวาปรับได้:
+- ป้าย (**label**) และ **keycode**
+- ขนาด **กว้าง (w)** / **สูง (h)** เป็นหน่วยกริด
+- ตำแหน่ง **X / Y** พิมพ์ตัวเลขวางเป๊ะๆ ได้
 
+**ลากปุ่มเพื่อจัดตำแหน่งอิสระ**
+- snap ทีละ 0.25 หน่วยให้เรียงสวย
+- กด **Alt** ค้างขณะลาก = วางละเอียด
+
+</td><td>
+
+**เครื่องมืออื่น**
+- **＋ เพิ่มปุ่ม** — เพิ่มปุ่มใหม่ที่แถวล่างสุด
+- **🎯 Record** — กดแล้วกดปุ่มจริงบนคีย์บอร์ด ระบบจับ keycode ให้เอง
+- แถบ **Profile** ด้านบน — สร้าง / เปลี่ยนชื่อ / ลบ profile + คัดลอก overlay URL
+- **คืนค่าเริ่มต้น** — กลับไปใช้ layout default
+
+</td></tr>
+</table>
+
+กด **บันทึก & ใช้งาน** → overlay ของ profile นั้น **รีโหลดเองอัตโนมัติ** (profile อื่นไม่กระทบ)
 ค่าที่บันทึกทั้งหมดเก็บที่ `config/profiles.json`
 
-## ปรับ layout ปุ่ม — แก้ไฟล์เอง (ทางเลือก)
+---
 
-ค่า **default** (ตอน profile ยังว่าง) อยู่ในไฟล์ [`public/layout.js`](public/layout.js) —
-default ปัจจุบันเป็นคีย์บอร์ดสีฟ้าพาสเทล มีแถวเลข 1-0 + QWERTY + Space
+## 👥 หลาย Profile
 
-- `LAYOUT` = array ของแถว, แต่ละแถวเป็น array ของปุ่ม
-- แต่ละปุ่ม: `{ code, label, width }`
-  - `code` — keycode (ใช้ค่าจากตาราง `KEY` ในไฟล์ เช่น `KEY.W`, `KEY.SPACE`)
-  - `label` — ข้อความบนปุ่ม
-  - `width` — ความกว้าง (1 = ปกติ, ไม่ใส่ = 1)
-- เว้นช่องว่าง: `{ spacer: 0.5 }`
+รองรับหลาย profile ต่อเครื่อง แต่ละอันมี layout และ overlay URL ของตัวเอง
+(เช่น profile เกม A กับเกม B คนละหน้าตา) สลับใช้ได้อิสระ
 
-> หมายเหตุ: ถ้า profile มี layout ที่บันทึกไว้แล้ว (ใน `config/profiles.json`) overlay จะใช้ค่านั้นก่อน
-> `layout.js` เป็นค่า default ที่ใช้เฉพาะตอน profile ยังว่าง — กด "คืนค่าเริ่มต้น" ใน editor แล้วบันทึกเพื่อกลับมาใช้
+- แต่ละ profile มี URL เช่น `http://localhost:3100/overlay/ab12cd`
+- แก้ profile ไหน overlay ของ profile นั้นรีโหลดเอง profile อื่นไม่สะเทือน
 
-## ปรับสไตล์
+---
 
-แก้ CSS variables ที่หัวไฟล์ [`public/overlay.css`](public/overlay.css) — สีคีย์แคป (`--key-bg`),
-สีตัวหนังสือ (`--key-text`), สีตอนกด (`--key-pressed-bg`), ขนาดปุ่ม (`--key-size`), ความมน (`--key-radius`)
+## 🛠️ แก้ default layout ในโค้ด (ทางเลือก)
 
-## โครงสร้างไฟล์
+ค่า **default** (ใช้เมื่อ profile ยังว่าง) อยู่ในไฟล์ [`public/layout.js`](public/layout.js)
+
+โมเดล layout เป็นแบบ **วางอิสระ**: layout คือ array แบนๆ ของปุ่ม แต่ละปุ่มมีพิกัดของตัวเอง
+
+```js
+{ code: KEY.W, label: 'W', x: 1, y: 2, w: 1, h: 1 }
+```
+
+| ฟิลด์ | ความหมาย |
+| --- | --- |
+| `code` | keycode ของ uiohook — ใช้ค่าจากตาราง `KEY` ในไฟล์ (เช่น `KEY.W`, `KEY.SPACE`) |
+| `label` | ข้อความบนปุ่ม |
+| `x`, `y` | ตำแหน่งเป็นหน่วยกริด (1 หน่วย = 1 ช่องปุ่ม) นับจากมุมซ้ายบน = `0,0` |
+| `w`, `h` | ขนาดกว้าง/สูงเป็นหน่วย (ไม่ใส่ = 1) |
+
+> default ในไฟล์ยังเขียนแบบ **แถว** ไว้เพื่ออ่านง่าย แล้วถูกแปลงเป็นพิกัดอัตโนมัติด้วย `toFreeLayout()`
+> (layout แบบแถวรุ่นเก่าที่บันทึกไว้ก็ถูกแปลงให้เองตอนโหลด)
+
+> 📌 ถ้า profile มี layout บันทึกไว้แล้วใน `config/profiles.json` overlay จะใช้ค่านั้นก่อน —
+> `layout.js` ใช้เฉพาะตอน profile ยังว่าง กด **คืนค่าเริ่มต้น** ใน editor แล้วบันทึกเพื่อกลับมาใช้
+
+---
+
+## 🎨 ปรับสไตล์
+
+แก้ CSS variables ที่หัวไฟล์ [`public/overlay.css`](public/overlay.css)
+
+| ตัวแปร | ควบคุม |
+| --- | --- |
+| `--key-bg` | สีคีย์แคป (ตอนพัก) |
+| `--key-text` | สีตัวหนังสือ |
+| `--key-pressed-bg` | สีตอนกด |
+| `--key-size` | ขนาดปุ่ม |
+| `--key-gap` | ระยะห่างระหว่างปุ่ม |
+| `--key-radius` | ความมนของมุม |
+
+---
+
+## 📁 โครงสร้างไฟล์
 
 ```
-server/index.js      service: hook + WebSocket + static + profiles API + /overlay/:id
-server/hook.js       child process ที่ทำ global keyboard hook (แยกกันแครช)
-public/index.html    หน้า overlay ที่ OBS โหลด (เสิร์ฟที่ / และ /overlay/<id>)
-public/overlay.js    หา profile จาก URL + โหลด layout + render + animation
-public/overlay.css   ธีมคีย์แคปฟ้าพาสเทล (พื้นโปร่งใส)
-public/layout.js     ⭐ layout ค่าเริ่มต้น + ตาราง keycode
-public/editor.html   หน้า config (เปิด /editor.html)
-public/editor.js     ตรรกะ editor (จัดการ profile, แก้ปุ่ม, record, save)
-public/editor.css    สไตล์หน้า editor
-config/profiles.json profile ทั้งหมด (สร้างอัตโนมัติ, ไม่ commit)
+server/
+  index.js       service: hook + WebSocket + static + profiles API + /overlay/:id
+  hook.js        child process ทำ global keyboard hook (แยกไว้กันแครชลามถึง server)
+public/
+  index.html     หน้า overlay ที่ OBS โหลด (เสิร์ฟที่ / และ /overlay/<id>)
+  overlay.js     หา profile จาก URL → โหลด layout → วางปุ่มตามพิกัด + animation
+  overlay.css    ธีมคีย์แคป (พื้นโปร่งใส) + วางปุ่มแบบ absolute จากพิกัด x/y
+  layout.js      ⭐ layout ค่าเริ่มต้น + ตาราง keycode + ตัวแปลง toFreeLayout
+  editor.html    หน้า config (เปิด /editor.html)
+  editor.js      ตรรกะ editor: จัดการ profile, คลิก/ลากวางปุ่มอิสระ, record, save
+  editor.css     สไตล์หน้า editor
+config/
+  profiles.json  profile ทั้งหมด (สร้างอัตโนมัติ, ไม่ commit ขึ้น git)
 ```
+
+---
+
+## 📦 การกระจาย (Production)
+
+ออกแบบให้เป็น **local app** ที่แต่ละคนรันบนเครื่องตัวเอง — keystroke ไม่ออกจากเครื่อง
+เพราะ global key hook ต้องรันในเครื่อง จึงไม่ใช้โมเดลคลาวด์ ถ้าจะแพ็กเป็นเดสก์ท็อปแอปทีหลัง
+(เช่น Electron / pkg) ก็ห่อ service นี้ได้เลย โครงสร้างไม่ต้องเปลี่ยน
+
+---
+
+<div align="center">
+<sub>Made with ☕ for streamers · MIT License</sub>
+</div>

@@ -100,10 +100,10 @@ global key hook must run locally. If packaging as a desktop app later, wrap this
 
 ```bash
 npm install
-npm start          # → http://localhost:3000
+npm start          # → http://localhost:3100
 ```
 
-Open `http://localhost:3000` in a normal browser to verify rendering. To see key
+Open `http://localhost:3100` in a normal browser to verify rendering. To see key
 animations you must grant **Accessibility** permission on macOS
 (System Settings → Privacy & Security → Accessibility) to the terminal running node,
 otherwise the hook receives no events.
