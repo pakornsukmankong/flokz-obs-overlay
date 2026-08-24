@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, Suspense, useEffect, useRef, useState } from "react";
+import { CSSProperties, Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
 const STALE_MS = 20000;
@@ -35,28 +35,23 @@ function GrindOverlayInner() {
   const [count, setCount] = useState(0);
   const [live, setLive] = useState(false);
   const [pop, setPop] = useState(0);
-  const lastSeen = useRef(0);
 
+  // poll count ของ token นี้ทุก 1.5 วิ (แทน realtime)
   useEffect(() => {
-    let ws: WebSocket | null = null, stop = false, t: ReturnType<typeof setTimeout>;
-    const connect = () => {
-      if (stop) return;
-      ws = new WebSocket(`ws://${location.host}`);
-      ws.onopen = () => ws?.send(JSON.stringify({ type: "grind-hello", token }));
-      ws.onmessage = (ev) => {
-        let d: { type?: string; token?: string; count?: number };
-        try { d = JSON.parse(ev.data); } catch { return; }
-        if (d.type === "grind-state" && d.token === token && typeof d.count === "number") {
-          lastSeen.current = Date.now(); setLive(true);
-          setCount((prev) => { if (prev !== d.count) setPop((p) => p + 1); return d.count!; });
-        }
-      };
-      ws.onclose = () => { setLive(false); t = setTimeout(connect, 1500); };
-      ws.onerror = () => ws?.close();
+    let alive = true;
+    const poll = async () => {
+      try {
+        const s: { count?: number; at?: number } = await (
+          await fetch(`/api/grind?token=${encodeURIComponent(token)}`, { cache: "no-store" })
+        ).json();
+        if (!alive) return;
+        if (typeof s.count === "number") setCount((prev) => { if (prev !== s.count) setPop((p) => p + 1); return s.count!; });
+        setLive(typeof s.at === "number" && s.at > 0 && Date.now() - s.at < STALE_MS);
+      } catch {}
     };
-    connect();
-    const iv = setInterval(() => setLive(Date.now() - lastSeen.current < STALE_MS), 2000);
-    return () => { stop = true; clearTimeout(t); clearInterval(iv); ws?.close(); };
+    poll();
+    const iv = setInterval(poll, 1500);
+    return () => { alive = false; clearInterval(iv); };
   }, [token]);
 
   const rootStyle: CSSProperties = {

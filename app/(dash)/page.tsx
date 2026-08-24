@@ -1,15 +1,8 @@
 import Link from "next/link";
-import { Keyboard, Mic, Swords, ArrowRight } from "lucide-react";
+import { Mic, Swords, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const tools = [
-  {
-    href: "/keyboard",
-    icon: Keyboard,
-    title: "Keyboard Overlay",
-    desc: "แสดงคีย์บอร์ดบนสตรีม ปุ่มเด้งตามที่กดจริง — จัด layout แบบลากวาง มีหลาย profile",
-    accent: "text-neon-cyan",
-  },
   {
     href: "/talk-setup",
     icon: Mic,
@@ -35,7 +28,7 @@ export default function HomePage() {
           <span className="text-primary text-glow">FLOKZ</span> Overlays
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-          ชุดเครื่องมือ overlay สำหรับสตรีมเมอร์ — รันในเครื่องคุณเอง keystroke/เสียง/ภาพ ไม่ออกไปไหน
+          ชุดเครื่องมือ overlay สำหรับสตรีมเมอร์ — avatar เปลี่ยนตามเสียง + ตัวนับรอบดันจากภาพหน้าจอ
         </p>
       </section>
 

@@ -51,7 +51,6 @@ export default function GrindPage() {
   const grayRef = useRef(new Uint8Array(MASK_N));
   const idRef = useRef(0);
   const tplRefObj = useRef<Template | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
 
   const cfgRef = useRef({ cutoff, minScore, minGap });
   const regionRef = useRef(region);
@@ -98,27 +97,25 @@ export default function GrindPage() {
     ctx.putImageData(img, 0, 0);
   }, []);
 
-  // ---- WebSocket push (เชื่อมครั้งเดียว, อ่านค่าล่าสุดผ่าน ref กัน reconnect churn) ----
+  // ---- push count ไป /api/grind (overlay ฝั่ง OBS poll เอา) + heartbeat ให้จุด live เขียว ----
   const overlayKeyRef = useRef(overlayKey);
   const runsRef = useRef(runs);
   useEffect(() => { overlayKeyRef.current = overlayKey; }, [overlayKey]);
   useEffect(() => { runsRef.current = runs; }, [runs]);
   const pushOverlay = useCallback(() => {
-    const ws = wsRef.current;
     const key = overlayKeyRef.current;
-    if (!key || !ws || ws.readyState !== 1) return;
+    if (!key) return;
     const r = runsRef.current;
     const lastAt = r.length ? r[r.length - 1].at : null;
-    ws.send(JSON.stringify({ type: "grind-state", token: key, count: r.length, lastAt, at: Date.now() }));
+    fetch("/api/grind", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: key, count: r.length, lastAt }),
+      keepalive: true,
+    }).catch(() => {});
   }, []);
-  useEffect(() => {
-    let stop = false, t: ReturnType<typeof setTimeout>;
-    const connect = () => { if (stop) return; const ws = new WebSocket(`ws://${location.host}`); wsRef.current = ws; ws.onopen = () => pushOverlay(); ws.onclose = () => { t = setTimeout(connect, 1500); }; ws.onerror = () => ws.close(); };
-    connect();
-    const iv = setInterval(pushOverlay, OVERLAY_BEAT_MS);
-    return () => { stop = true; clearTimeout(t); clearInterval(iv); wsRef.current?.close(); };
-  }, [pushOverlay]);
   useEffect(() => { pushOverlay(); }, [runs, overlayKey, pushOverlay]);
+  useEffect(() => { const iv = setInterval(pushOverlay, OVERLAY_BEAT_MS); return () => clearInterval(iv); }, [pushOverlay]);
 
   const overlayUrl = (() => {
     if (!overlayKey || typeof window === "undefined") return "";

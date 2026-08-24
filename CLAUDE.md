@@ -4,72 +4,61 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-FLOKZ Overlay Suite — เครื่องมือ overlay สำหรับ OBS 3 ตัว: **keyboard** (คีย์เด้งตามที่กดจริง),
-**talk** (PNGtuber เปลี่ยนรูปตามเสียงไมค์), **grind** (นับรอบดันจากการจับภาพหน้าจอ)
-keystroke/เสียง/ภาพ ประมวลผลในเครื่องทั้งหมด ไม่ส่งออกไปไหน
+FLOKZ Overlays — OBS overlay 2 ตัว: **talk** (PNGtuber เปลี่ยนรูปตามเสียงไมค์) และ
+**grind** (นับรอบดันจากการจับภาพหน้าจอ). mic/ภาพ ประมวลผลในเบราว์เซอร์ทั้งหมด.
 
-Stack: **Next.js 15 (App Router) + React 19 + TypeScript + Tailwind + shadcn/ui** ธีม dark neon
-เสิร์ฟด้วย **custom server** (`server.js`) ที่รวม Next + WebSocket + uiohook เข้าเป็น process เดียว
+Stack: **Next.js 15 (App Router) + React 19 + TypeScript + Tailwind + shadcn/ui** ธีม dark neon.
+**Deploy บน Vercel ได้** — เป็น Next.js ธรรมดา (ไม่มี custom server / WebSocket / native module).
 
-## Architecture (สำคัญ)
+> เดิมมีฟีเจอร์ keyboard overlay (uiohook + custom WS server) แต่ **ถอดออกแล้ว** เพราะรันบน
+> cloud ไม่ได้ (ต้องมีคีย์บอร์ดจริง). ประวัติอยู่ใน git.
 
-OBS Browser Source รับ global keyboard input ไม่ได้ + Next App Router เพียวๆ รัน WebSocket/native hook ไม่ได้
-→ ใช้ **custom Next server**:
+## Architecture
 
-- **`server.js`** — createServer + Next handler; แนบ `ws` แบบ `noServer` แล้ว route `upgrade`:
-  `/_next/*` → `app.getUpgradeHandler()` (HMR ของ Next), ที่เหลือ → wss ของเรา.
-  - **สำคัญ 2 จุด (เคยพังมาก่อน):**
-    1. Next dev แอบเพิ่ม `upgrade` listener ของตัวเองแบบ lazy → ต้องกันด้วย `newListener`
-       ให้เหลือ listener ของเราตัวเดียว ไม่งั้น socket โดน destroy (1006) + HMR frame เพี้ยน
-    2. `perMessageDeflate: false` — บาง proxy ทำเฟรมบีบอัดเพี้ยน
-  - hub (broadcast / reloadProfile / relayGrind / talkReload) วางไว้บน `globalThis.__FLOKZ_HUB`
-    ให้ Route Handler เข้าถึง instance เดียวกัน (`lib/ws-hub.ts` เป็นตัวเรียก)
-  - spawn `server/hook.js` (uiohook child — ไม่เปลี่ยนจากเดิม) respawn ทุก 3s ถ้ายังไม่ได้สิทธิ์ Accessibility
-- **`server/hook.js`** — child process รัน uiohook ส่ง `{type:down|up,keycode}` กลับ parent ผ่าน `process.send`
-- รัน: `npm run dev` / `npm start` = `node server.js` (**ต้อง node ≥18.18**; repo ใช้ nvm v22 — มี `.nvmrc`)
+overlay (ใน OBS) กับหน้า config เป็นคนละเบราว์เซอร์ → คุยกันผ่าน **API + polling** (ไม่ใช้ realtime):
+
+- **Talk**: `/talk-setup` อัปโหลดรูป (ย่อ ≤700px เป็น data URL) + ปรับ threshold/hold → `POST /api/talk`.
+  `/talk` (overlay) โหลด config, เปิดไมค์ (Web Audio RMS), rms>threshold → สลับรูป, **poll `/api/talk` ทุก 3s**.
+- **Grind**: `/grind` จับหน้าจอ (getDisplayMedia) → detect "MISSION START" (template matching ใน
+  module worker `app/(dash)/grind/scan.worker.ts`) → นับรอบ → **`POST /api/grind` {token,count}** ทุกครั้งที่
+  count เปลี่ยน + heartbeat 5s. `/grind-overlay/[token]` (overlay) **poll `GET /api/grind?token=` ทุก 1.5s**
+  โชว์เลข (จุด live เขียวถ้า `at` สดกว่า 20s). count เก็บใน localStorage ของหน้า counter ด้วย.
+
+## Storage — `lib/kv.ts` (2 โหมด)
+
+- มี env `KV_REST_API_URL` (บน Vercel) → ใช้ **Vercel KV** (`@vercel/kv`, dynamic import)
+- ไม่มี env (dev ในเครื่อง) → เขียนไฟล์ JSON ใน `./config` (zero-setup)
+- keys: `talk` (config), `grind:<token>` (state, TTL 1 วัน)
 
 ## โครงสร้าง
 
-- **`app/(dash)/`** — หน้า config มี navbar + ธีม neon (`layout.tsx` = navbar + `.neon-bg` + Toaster)
-  - `page.tsx` (landing), `keyboard/`, `talk-setup/`, `grind/` (+ `grind/scan.worker.ts` module worker)
-- **`app/(overlay)/`** — overlay สำหรับ OBS: พื้นโปร่งใส ไม่มี chrome (`layout.tsx` ว่าง; body โปร่งใสจาก globals)
-  - `overlay/[id]/` (keyboard), `talk/` (PNGtuber), `grind-overlay/[token]/`
-  - route group `(name)` ไม่มีผลกับ URL → OBS URL: `/overlay/<id>`, `/talk`, `/grind-overlay/<token>`
-- **`app/api/`** — Route Handlers: `profiles/`, `profiles/[id]/` (PUT → reloadProfile), `talk/` (POST → talkReload)
-- **`lib/`** — `store.ts` (profiles.json), `talk-store.ts` (talk.json), `ws-hub.ts`,
-  `keyboard.ts` (KEY table + toFreeLayout + DEFAULT_LAYOUT), `detector.ts` (template matcher), `utils.ts`
-- **`components/`** — `navbar.tsx`, `keyboard-view.tsx` + `keyboard.module.css` (keycap), `ui/` (shadcn)
-- **`config/`** — `profiles.json`, `talk.json` (git-ignored, auto-created)
-
-## Data model / WS protocol (คงเดิมจากเวอร์ชัน vanilla)
-
-- **Keyboard layout** = flat array `{ code, label, x, y, w, h }` (พิกัดหน่วยกริด, วางอิสระ).
-  `lib/keyboard.ts#toFreeLayout` normalize (รับได้ทั้งรูปแถวเก่าและ flat). profile layout ว่าง → ใช้ `DEFAULT_LAYOUT`
-- **Talk** = `{ talking, idle (data URLs), threshold, hold }`
-- **Grind** = client-side ล้วน; count อยู่ใน localStorage ของหน้า `/grind`; ส่งไป overlay ผ่าน WS token relay
-- **WS messages**: `hello{profile}` / `down` / `up` / `reload` (keyboard) · `talk-reload` ·
-  `grind-hello{token}` / `grind-state{token,count,…}` (relay เฉพาะ `_grindToken` ตรงกัน)
+- `app/(dash)/` — หน้า config มี navbar + ธีม neon (`layout.tsx`); `page.tsx` (landing), `talk-setup/`, `grind/`
+- `app/(overlay)/` — overlay OBS พื้นโปร่งใส ไม่มี chrome (`layout.tsx` ว่าง; body โปร่งใสจาก globals.css)
+  - `talk/`, `grind-overlay/[token]/` — URL คงเดิม: `/talk`, `/grind-overlay/<token>`
+- `app/api/` — `talk/route.ts` (GET/POST), `grind/route.ts` (GET ?token / POST {token,count})
+- `lib/` — `kv.ts` (storage), `detector.ts` (template matcher, framework-free), `utils.ts`
+- `components/` — `navbar.tsx`, `ui/` (shadcn)
+- `config/` — ไฟล์ JSON ตอน dev (git-ignored, auto-created)
 
 ## Conventions
 
-- **Keycodes เป็น uiohook codes ไม่ใช่ `KeyboardEvent.code`** (ตาราง `KEY` ใน `lib/keyboard.ts`)
 - คอมเมนต์/ข้อความผู้ใช้เป็นภาษาไทย — คงสไตล์นี้
 - Overlay ต้องพื้นโปร่งใส (ธีม neon ใช้เฉพาะ `.neon-bg` ในกลุ่ม dash — body โปร่งใสเสมอ)
-- shadcn components อยู่ใน `components/ui/` (เพิ่มด้วย `npx shadcn add …`)
+- `grind-overlay` ใช้ `useSearchParams` → ต้องอยู่ใน `<Suspense>` (build ถึงจะผ่าน)
+- module worker โหลดด้วย `new Worker(new URL('./scan.worker.ts', import.meta.url))`
 
-## Run / build
+## Run / build / deploy
 
 ```bash
-nvm use            # node 22 (.nvmrc)
-npm install
-npm run dev        # → http://localhost:3100 (custom server + HMR)
-npm run build && npm start   # production
+nvm use && npm install
+npm run dev            # → http://localhost:3100 (file storage, ไม่ต้องตั้ง KV)
+npm run build && npm start
 ```
-macOS: เปิดสิทธิ์ **Accessibility** ให้ Terminal ที่รัน node ไม่งั้นคีย์ไม่ขยับ (overlay ยังเสิร์ฟปกติ)
+Vercel: Import repo → Storage → connect Upstash KV → redeploy (ดู README)
 
 ## Gotchas
 
-- WebSocket ต้องรันผ่าน `server.js` เท่านั้น — `next dev`/`next start` เดี่ยวๆ ไม่มี WS/hook
-- getDisplayMedia (grind) + getUserMedia (talk) ต้องเป็นแท็บเบราว์เซอร์จริง; ใน OBS ถ้าไมค์/จอไม่ทำงาน
-  ให้เปิดใน browser ปกติแล้วใช้ Window Capture
-- module worker โหลดด้วย `new Worker(new URL('./scan.worker.ts', import.meta.url))` (webpack bundle ให้)
+- getDisplayMedia (grind) / getUserMedia (talk) ต้องเป็นแท็บเบราว์เซอร์จริง (https/localhost);
+  ถ้าใน OBS ไม่ทำงาน ให้เปิดใน browser ปกติแล้วใช้ Window Capture
+- อัปเดต overlay ไม่ทันที (polling 1.5–3s) — เหมาะกับ counter/avatar อยู่แล้ว
+- รูป avatar เก็บเป็น data URL ใน KV; ถ้าใหญ่เกิน limit ของ KV ให้ย้ายไป Vercel Blob

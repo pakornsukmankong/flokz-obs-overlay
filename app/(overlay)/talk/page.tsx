@@ -22,29 +22,22 @@ export default function TalkOverlayPage() {
   const [hint, setHint] = useState("");
   const cfgRef = useRef({ threshold: 0.05, hold: 180 });
 
-  // โหลด config + ฟัง talk-reload
+  // โหลด config + poll ทุก 3 วิ (แทน realtime — พอสำหรับ avatar)
   useEffect(() => {
     let alive = true;
-    (async () => {
+    let lastJson = "";
+    const load = async () => {
       try {
         const c: Cfg = await (await fetch("/api/talk", { cache: "no-store" })).json();
         if (!alive) return;
-        setCfg(c);
-        cfgRef.current = { threshold: c.threshold, hold: c.hold };
+        const j = JSON.stringify(c);
+        if (j !== lastJson) { lastJson = j; setCfg(c); cfgRef.current = { threshold: c.threshold, hold: c.hold }; }
         if (!c.idle && !c.talking) setHint("ยังไม่ได้ตั้งค่ารูป — เปิด /talk-setup");
       } catch {}
-    })();
-
-    let ws: WebSocket | null = null, stop = false, t: ReturnType<typeof setTimeout>;
-    const connect = () => {
-      if (stop) return;
-      ws = new WebSocket(`ws://${location.host}`);
-      ws.onmessage = (ev) => { let d; try { d = JSON.parse(ev.data); } catch { return; } if (d.type === "talk-reload") location.reload(); };
-      ws.onclose = () => { t = setTimeout(connect, 1500); };
-      ws.onerror = () => ws?.close();
     };
-    connect();
-    return () => { alive = false; stop = true; clearTimeout(t); ws?.close(); };
+    load();
+    const iv = setInterval(load, 3000);
+    return () => { alive = false; clearInterval(iv); };
   }, []);
 
   // ไมค์
