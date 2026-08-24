@@ -1,0 +1,52 @@
+/* keycap look (พอร์ตจาก overlay.css) — ใช้ร่วมกันทั้ง overlay และ editor preview */
+.kb {
+  --key-size: 58px;
+  --key-gap: 8px;
+  --cell: calc(var(--key-size) + var(--key-gap));
+  --key-radius: 10px;
+  --key-bg: #bdd0f5;
+  --key-text: #5c6572;
+  --key-pressed-bg: #6f7278;
+  --key-pressed-text: #f6f8fb;
+  position: relative;
+  width: calc(var(--cols, 1) * var(--cell) - var(--key-gap));
+  height: calc(var(--rows, 1) * var(--cell) - var(--key-gap));
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+.key {
+  position: absolute;
+  left: calc(var(--x, 0) * var(--cell));
+  top: calc(var(--y, 0) * var(--cell));
+  width: calc(var(--key-size) * var(--w, 1) + var(--key-gap) * (var(--w, 1) - 1));
+  height: calc(var(--key-size) * var(--h, 1) + var(--key-gap) * (var(--h, 1) - 1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--key-radius);
+  border: none;
+  background: var(--key-bg);
+  color: var(--key-text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  transition: transform 90ms ease, background 110ms ease, color 110ms ease, box-shadow 90ms ease;
+}
+
+.cap {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  user-select: none;
+}
+
+.pressed {
+  background: var(--key-pressed-bg);
+  color: var(--key-pressed-text);
+  transform: translateY(2px) scale(0.97);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* ---- editor helpers ---- */
+.editable { cursor: grab; }
+.editable:active { cursor: grabbing; }
+.selected { outline: 2px solid #7aa2f7; outline-offset: 2px; }
+.dragging { opacity: 0.5; }
