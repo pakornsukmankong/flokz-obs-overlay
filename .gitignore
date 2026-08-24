@@ -7,3 +7,5 @@ config/
 .agents/
 .claude/
 skills-lock.json
+.next/
+next-env.d.ts

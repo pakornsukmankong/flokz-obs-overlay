@@ -42,17 +42,32 @@ OBS Browser Source **รับ keyboard event ระดับ global ไม่�
 
 ## 🚀 เริ่มใช้งาน
 
+โปรเจ็คนี้เป็น **Next.js 15 + shadcn/ui** เสิร์ฟด้วย custom server (Next + WebSocket + uiohook ใน process เดียว)
+ต้องใช้ **Node ≥ 18.18** (repo ตั้งไว้ที่ v22 ผ่าน `.nvmrc`)
+
 ```bash
+nvm use          # เลือก node 22 (ถ้าใช้ nvm)
 npm install
-npm start
+npm run dev      # โหมด dev + HMR
+# หรือ production:  npm run build && npm start
 ```
 
-เปิดเบราว์เซอร์ไปที่ 👉 **http://localhost:3100**
+เปิดเบราว์เซอร์ไปที่ 👉 **http://localhost:3100** (เปลี่ยนพอร์ตด้วย `PORT=4000 npm run dev`)
 
-| หน้า | URL |
-| --- | --- |
-| Overlay (สำหรับ OBS) | `http://localhost:3100` หรือ `http://localhost:3100/overlay/<id>` |
-| Editor (ตั้งค่า) | `http://localhost:3100/editor.html` |
+| หน้า | URL | ประเภท |
+| --- | --- | --- |
+| หน้าแรก (เมนูรวม) | `/` | Dashboard (navbar neon) |
+| ตั้งค่าคีย์บอร์ด | `/keyboard` | Config |
+| ตั้งค่า Talk | `/talk-setup` | Config |
+| ตัวนับรอบดัน (Grind) | `/grind` | Config |
+| Overlay คีย์บอร์ด (ใส่ OBS) | `/overlay/<id>` | Overlay โปร่งใส |
+| Overlay พูด / PNGtuber (ใส่ OBS) | `/talk` | Overlay โปร่งใส |
+| Overlay ตัวนับรอบดัน (ใส่ OBS) | `/grind-overlay/<token>` | Overlay โปร่งใส |
+
+> 🧭 หน้า config ทุกหน้ามี **top navbar** สลับเครื่องมือได้ (ธีม dark neon)
+> URL ของ overlay แต่ละอันคัดลอกได้จากปุ่มในหน้า config ของมัน
+
+> ⚠️ ต้องรันผ่าน `npm run dev` / `npm start` (custom server) เท่านั้น — `next dev` เดี่ยวๆ จะไม่มี WebSocket/hook
 
 > 💡 เปลี่ยนพอร์ตได้ด้วย `PORT=4000 npm start`
 
@@ -75,6 +90,45 @@ npm start
 4. **Width / Height**: ตั้งให้พอดีกับคีย์บอร์ด (เช่น 900 × 400)
 5. ปิด ☑️ **"Shutdown source when not visible"**
 6. พื้นหลังโปร่งใสอยู่แล้ว วางทับฉากได้ทันที
+
+---
+
+## 🗣️ Overlay พูด (PNGtuber) — เปลี่ยนรูปตามเสียงไมค์
+
+เมื่อ **มีเสียงพูดออกไมค์ → โชว์รูปที่ 1** (ปากอ้า), **เงียบ → โชว์รูปที่ 2** (ปากปิด)
+ทำงานในเบราว์เซอร์ล้วน (Web Audio API จับไมค์) — **ไม่เกี่ยวกับ keyboard hook**
+
+**ตั้งค่า:**
+1. เปิด **http://localhost:3100/talk-setup.html**
+2. อัปโหลด **รูปตอนพูด** และ **รูปตอนเงียบ** (ระบบย่อขนาดให้อัตโนมัติ)
+3. กด **🎤 เริ่มทดสอบไมค์** → พูดดูว่ารูปสลับถูกไหม
+4. ปรับ **threshold** (เส้นแดงบนมิเตอร์) ให้อยู่ระหว่างระดับเสียงพูดกับเงียบ, ปรับ **hold** กันภาพกระพริบ
+5. กด **บันทึก** → เอา `http://localhost:3100/talk` ไปใส่ OBS Browser Source
+
+> ⚠️ **ไมค์ใน OBS:** Browser Source ต้องได้รับอนุญาตให้ใช้ไมค์ ถ้ารูปไม่ขยับใน OBS
+> ให้ลองเปิด `/talk` ใน **เบราว์เซอร์ปกติ** (อนุญาตไมค์) แล้วใช้ **Window Capture** แทน
+> — บน localhost เบราว์เซอร์อนุญาต getUserMedia ให้อยู่แล้ว
+
+---
+
+## ⚔️ ตัวนับรอบดันอัตโนมัติ (Grind) — พอร์ตจาก dragonica
+
+จับภาพหน้าจอเกม (screen capture) แล้ว **นับรอบอัตโนมัติเมื่อเจอแบนเนอร์ “MISSION START”**
+ด้วยการ match รูปแบบตัวอักษร (template matching) — อ่านภาพอย่างเดียว ไม่ยุ่งกับตัวเกม
+
+**วิธีใช้:**
+1. เปิด **http://localhost:3100/grind** (ในเบราว์เซอร์ปกติ)
+2. กด **เริ่มจับหน้าจอ** → เลือกแท็บ **“หน้าต่าง”** แล้วเลือกหน้าต่างเกม (เล่นแบบ Windowed/Borderless)
+3. ลงดันตามปกติ — พอ “MISSION START” ขึ้นครั้งแรก ระบบจะล็อกตำแหน่งเองแล้วเริ่มนับ
+4. อยากโชว์บนสตรีม: กด **สร้างลิงก์สำหรับ OBS** → คัดลอก `.../grind-overlay/<token>` ไปใส่ Browser Source
+   (แท็บ `/grind` ต้องเปิดค้างไว้ เพราะมันเป็นตัวส่งจำนวนรอบไป overlay ผ่าน WebSocket)
+
+- ปรับ **ขนาดตัวเลข / ขอบดำ / แสดง stamina** ได้ที่พาเนล OBS (ต่อท้าย URL เป็น query)
+- มี **+1 / −1 / รีเซ็ต** เผื่อนับพลาด, และตั้งค่าละเอียด (กรอบ, ความสว่าง, เกณฑ์ความเหมือน) ได้
+- ต่างจากต้นฉบับ: ส่งจำนวนไป overlay ผ่าน **WebSocket ของเซิร์ฟเวอร์นี้** (ไม่ใช้ Supabase) — ทุกอย่างอยู่ในเครื่อง
+
+> 💡 การตรวจจับใช้ **Web Worker** (`grind.worker.js`) + template ฝังใน `detector.js` — ไม่ต้อง calibrate
+> capture ต้องเป็น Windowed/Borderless (Fullscreen Exclusive อาจได้จอดำ)
 
 ---
 
