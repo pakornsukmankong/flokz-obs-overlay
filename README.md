@@ -17,6 +17,7 @@ Next.js 15 · shadcn/ui · deploy บน Vercel ได้
 
 - 🗣️ **Talk (PNGtuber)** — avatar เปลี่ยนรูปตามเสียงไมค์ (พูด = ปากอ้า, เงียบ = ปากปิด) จับเสียงด้วย Web Audio API
 - ⚔️ **Grind Counter** — จับภาพหน้าจอเกม นับรอบดันอัตโนมัติเมื่อเจอ “MISSION START” (template matching ใน Web Worker) แล้วโชว์จำนวนบนสตรีม
+- ❤️ **Donation Alert** — เชื่อม **EasyDonate** (`read:donations`) โชว์ alert ตอนมีคนโดเนท (ชื่อ+ยอด+ข้อความ) อนิเมชั่น neon
 
 ทั้งคู่ประมวลผล mic/ภาพ **ในเบราว์เซอร์** — overlay กับ OBS คุยกันผ่าน API (polling) โดยเก็บข้อมูลกลางไว้ที่ storage
 
@@ -39,8 +40,18 @@ npm run dev        # → http://localhost:3100
 | Overlay Talk (ใส่ OBS) | `/talk` | avatar เปลี่ยนตามเสียง |
 | ตัวนับ Grind | `/grind` | จับหน้าจอ + นับรอบ + สร้างลิงก์ OBS |
 | Overlay Grind (ใส่ OBS) | `/grind-overlay/<token>` | โชว์จำนวนรอบ |
+| ตั้งค่า Donation Alert | `/donate-setup` | วาง EasyDonate API key + ทดสอบ alert |
+| Overlay Donation Alert (ใส่ OBS) | `/donate-alert` | โชว์ alert ตอนมีโดเนท |
 
 > overlay ทุกอันพื้นหลังโปร่งใส เอา URL ไปวางใน OBS → Browser Source ได้เลย
+
+### ❤️ Donation Alert (EasyDonate)
+1. สร้าง API key (scope `read:donations`) ที่ [EasyDonate developer dashboard](https://easydonate.app/dashboard/developer?tab=apiKeys)
+2. เปิด `/donate-setup` → วาง API key + ปรับยอดขั้นต่ำ/เวลาโชว์ → **บันทึก** (key เก็บฝั่ง server เท่านั้น)
+3. กด **ส่ง alert ทดสอบ** เพื่อลอง (เห็น **preview ในหน้า setup เลย** + ได้ยินเสียงถ้าเปิด TTS) แล้วเอา `/donate-alert` ไปใส่ OBS
+- **อ่านออกเสียง (TTS)** เปิด/ปิดได้ — ใช้ `SpeechSynthesis` ของเบราว์เซอร์ อ่าน "ชื่อ โดเนท ยอด บาท + ข้อความ" (เสียงไทยขึ้นกับ voice ที่เครื่อง/OBS มี)
+- server proxy อ่านโดเนทแล้ว **cache 4s กัน rate limit 60/นาที** ของ EasyDonate
+- overlay อ่านโดเนทมาโชว์เท่านั้น — **การรับเงินจริงเกิดที่หน้า donation page ของ EasyDonate** (ไม่ได้ตัดเงินผ่านที่นี่)
 
 ---
 

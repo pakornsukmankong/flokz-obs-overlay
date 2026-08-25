@@ -1,8 +1,15 @@
 import Link from "next/link";
-import { Mic, Swords, ArrowRight } from "lucide-react";
+import { Mic, Swords, Heart, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 const tools = [
+  {
+    href: "/donate-setup",
+    icon: Heart,
+    title: "Donation Alert",
+    desc: "โชว์ alert ตอนมีคนโดเนท (เชื่อม EasyDonate) — ชื่อ+ยอด+ข้อความ อนิเมชั่น neon",
+    accent: "text-primary",
+  },
   {
     href: "/talk-setup",
     icon: Mic,
