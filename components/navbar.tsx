@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Mic, Swords } from "lucide-react";
+import { Mic, Swords, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/talk-setup", label: "Talk", icon: Mic },
   { href: "/grind", label: "Grind", icon: Swords },
+  { href: "/donate-setup", label: "Donate", icon: Heart },
 ];
 
 export function Navbar() {

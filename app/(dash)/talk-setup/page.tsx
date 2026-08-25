@@ -26,7 +26,8 @@ export default function TalkSetupPage() {
   useEffect(() => { thRef.current = threshold; }, [threshold]);
   useEffect(() => { holdRef.current = hold; }, [hold]);
 
-  const overlayUrl = typeof window !== "undefined" ? `${location.origin}/talk` : "/talk";
+  const [overlayUrl, setOverlayUrl] = useState("/talk");
+  useEffect(() => { setOverlayUrl(`${location.origin}/talk`); }, []);
 
   useEffect(() => {
     (async () => {

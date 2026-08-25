@@ -1,0 +1,28 @@
+@keyframes dnIn {
+  0% { opacity: 0; transform: translateY(-24px) scale(0.92); }
+  60% { opacity: 1; transform: translateY(0) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dnGlow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(120,162,247,.5), 0 0 26px rgba(120,162,247,.35); }
+  50% { box-shadow: 0 0 0 1px rgba(120,162,247,.8), 0 0 40px rgba(120,162,247,.6); }
+}
+.card {
+  font-family: ui-sans-serif, system-ui, "Noto Sans Thai", sans-serif;
+  min-width: 320px;
+  max-width: 620px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(20,22,30,.92), rgba(12,14,20,.92));
+  border: 1px solid rgba(120,162,247,.4);
+  border-radius: 18px;
+  padding: 18px 26px;
+  backdrop-filter: blur(6px);
+  animation: dnIn .5s cubic-bezier(.2,.9,.3,1.4), dnGlow 1.8s ease-in-out infinite .5s;
+}
+.head { font-size: 18px; font-weight: 700; letter-spacing: .5px; color: #e7ebf2; }
+.name { color: #7aa2f7; text-shadow: 0 0 14px rgba(120,162,247,.7); }
+.amount {
+  margin-top: 2px; font-size: 44px; font-weight: 800; line-height: 1.05;
+  color: #ffcf5a; text-shadow: 0 0 18px rgba(255,207,90,.55); font-variant-numeric: tabular-nums;
+}
+.msg { margin-top: 6px; font-size: 16px; color: #cdd3dd; line-height: 1.45; word-break: break-word; }
