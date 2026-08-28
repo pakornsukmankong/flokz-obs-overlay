@@ -12,6 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { DonationAlertCard, type AlertDonation } from "@/components/donation-alert";
 import { speakDonation, speak, loadVoices } from "@/lib/tts";
 import { Volume2 } from "lucide-react";
+import { TopDonorsMarquee, type TopDonor } from "@/components/top-donors-marquee";
+
+const SAMPLE_TOP: TopDonor[] = [
+  { name: "เสี่ยโดม", total: 2000 }, { name: "ProGamerZ", total: 1250 },
+  { name: "น้องมิ้นท์", total: 800 }, { name: "FLOKZ แฟน", total: 350 }, { name: "Anonymous", total: 120 },
+];
 
 export default function DonateSetupPage() {
   const [configured, setConfigured] = useState(false);
@@ -28,12 +34,27 @@ export default function DonateSetupPage() {
   const [testMsg, setTestMsg] = useState("ทดสอบ alert 🎉");
   const [preview, setPreview] = useState<AlertDonation | null>(null);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [topPreview, setTopPreview] = useState<TopDonor[]>([]);
 
   // คำนวณ URL ฝั่ง client เท่านั้น (กัน hydration mismatch)
   const [overlayUrl, setOverlayUrl] = useState("/donate-alert");
   useEffect(() => { setOverlayUrl(`${location.origin}/donate-alert`); }, []);
 
   useEffect(() => loadVoices(setVoices), []); // โหลดรายการเสียงในเครื่อง
+
+  // poll top donors สำหรับ preview (ถ้ายังไม่มีข้อมูล ใช้ตัวอย่าง)
+  useEffect(() => {
+    let alive = true;
+    const poll = async () => {
+      try {
+        const j = await (await fetch("/api/easydonate/top?limit=10", { cache: "no-store" })).json();
+        if (alive) setTopPreview(j.donors && j.donors.length ? j.donors : SAMPLE_TOP);
+      } catch { if (alive) setTopPreview(SAMPLE_TOP); }
+    };
+    poll();
+    const iv = setInterval(poll, 8000);
+    return () => { alive = false; clearInterval(iv); };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -51,6 +72,7 @@ export default function DonateSetupPage() {
 
   const mark = () => setDirty(true);
   const thaiVoices = voices.filter((v) => /^th/i.test(v.lang)); // เฉพาะเสียงภาษาไทย
+  const topUrl = overlayUrl.replace("/donate-alert", "/top-donors");
 
   const save = async () => {
     try {
@@ -188,6 +210,26 @@ export default function DonateSetupPage() {
           ) : (
             <span className="self-center text-sm text-muted-foreground">กด “ส่ง alert ทดสอบ” เพื่อดูตัวอย่างที่นี่</span>
           )}
+        </div>
+      </Card>
+
+      <Card className="border-border/70 bg-card/70 p-0">
+        <div className="flex flex-wrap items-center gap-2 p-4">
+          <div>
+            <div className="font-display text-sm uppercase tracking-widest text-muted-foreground">Top Donors (marquee เลื่อน)</div>
+            <p className="text-xs text-muted-foreground">แถบอันดับยอดโดเนทรวม วิ่งวนไม่สะดุด · ปรับได้ด้วย query <code className="text-primary">?limit=10&amp;speed=30&amp;dir=right</code> (dir=left เลื่อนซ้าย)</p>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <code className="max-w-[220px] truncate rounded-md border border-border bg-secondary/40 px-2 py-1 font-mono text-xs text-primary">{topUrl}</code>
+            <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(topUrl); toast.success("คัดลอก URL แล้ว"); }}><Copy className="h-4 w-4" /></Button>
+            <Button variant="outline" size="icon" onClick={() => window.open(topUrl, "_blank")}><ExternalLink className="h-4 w-4" /></Button>
+          </div>
+        </div>
+        <div
+          className="relative flex h-16 items-center overflow-hidden border-t border-border/60"
+          style={{ backgroundColor: "#1b1e24", backgroundImage: "repeating-conic-gradient(#12151c 0% 25%, #171b24 0% 50%)", backgroundSize: "22px 22px" }}
+        >
+          <TopDonorsMarquee donors={topPreview} speed={18} dir="right" />
         </div>
       </Card>
 
