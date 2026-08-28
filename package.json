@@ -1,5 +1,5 @@
 {
-  "name": "flokz-obs-overlay",
+  "name": "flokz-stream-overlay",
   "version": "2.0.0",
   "description": "FLOKZ OBS overlays (talk / grind) — Next.js, deployable on Vercel.",
   "private": true,
