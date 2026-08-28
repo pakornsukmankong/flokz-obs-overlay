@@ -22,11 +22,15 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body || !valid(body.token)) return NextResponse.json({ ok: false, error: "bad token" }, { status: 400 });
-  const state: GrindState = {
-    count: Number.isFinite(body.count) ? body.count : 0,
-    lastAt: Number.isFinite(body.lastAt) ? body.lastAt : null,
-    at: Date.now(),
-  };
-  await kvSet(key(body.token), state, TTL);
-  return NextResponse.json({ ok: true });
+  try {
+    const state: GrindState = {
+      count: Number.isFinite(body.count) ? body.count : 0,
+      lastAt: Number.isFinite(body.lastAt) ? body.lastAt : null,
+      at: Date.now(),
+    };
+    await kvSet(key(body.token), state, TTL);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
+  }
 }
