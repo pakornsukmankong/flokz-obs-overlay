@@ -29,7 +29,9 @@ export const DEFAULT_CONFIG: DonateConfig = {
   apiKey: null, minAmount: 0, durationMs: 6000, tts: true, voiceURI: null, rate: 1,
 };
 
-const API_URL = "https://api.easydonate.app/api/v1/donations?limit=20";
+// base URL ของ EasyDonate API — override ได้ด้วย env ถ้า host/path จริงไม่ตรง
+export const API_BASE = process.env.EASYDONATE_API_BASE || "https://api.easydonate.app/api/v1";
+const API_URL = `${API_BASE}/donations?limit=20`;
 
 export async function getConfig(): Promise<DonateConfig> {
   return { ...DEFAULT_CONFIG, ...((await kvGet<Partial<DonateConfig>>(K.config)) ?? {}) };
@@ -46,12 +48,25 @@ function normalize(d: any): Donation | null {
   const created = d.createdAt ?? d.created_at;
   return {
     id,
-    name: String(d.donatorName ?? d.donator_name ?? d.name ?? "Anonymous").slice(0, 50),
+    name: String(d.donatorName ?? d.donator_name ?? d.name ?? "Anonymous").trim() || "Anonymous",
     amount: Number(d.amount ?? 0) || 0,
     currency: String(d.currency ?? "THB"),
-    message: String(d.message ?? ""),
+    message: String(d.donateMessage ?? d.message ?? ""),
     createdAt: created ? Date.parse(created) || Date.now() : Date.now(),
   };
+}
+
+/** แปลง response ของ EasyDonate GET /donations → รายการโดเนท (เอาเฉพาะ SUCCESS) */
+export function parseDonationsResponse(json: unknown): Donation[] {
+  const j = json as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  const list: unknown[] =
+    j?.data?.histories || // ← รูปจริงของ EasyDonate
+    (Array.isArray(j?.data) && j.data) ||
+    j?.data?.donations || j?.data?.items || j?.donations || j?.items || [];
+  return (list as Record<string, unknown>[])
+    .filter((d) => d && (!("status" in d) || d.status === "SUCCESS"))
+    .map(normalize)
+    .filter((x): x is Donation => !!x);
 }
 
 async function fetchReal(apiKey: string): Promise<Donation[]> {
@@ -60,11 +75,7 @@ async function fetchReal(apiKey: string): Promise<Donation[]> {
   try {
     const res = await fetch(API_URL, { headers: { Authorization: `Bearer ${apiKey}` }, cache: "no-store" });
     if (!res.ok) return cache?.items ?? [];
-    const json = await res.json();
-    const raw =
-      (Array.isArray(json?.data) && json.data) ||
-      json?.data?.donations || json?.data?.items || json?.donations || json?.items || [];
-    const items = (raw as unknown[]).map(normalize).filter((x): x is Donation => !!x);
+    const items = parseDonationsResponse(await res.json());
     await kvSet(K.cache, { at: Date.now(), items }, 60);
     return items;
   } catch {

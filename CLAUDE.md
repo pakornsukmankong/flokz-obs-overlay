@@ -28,6 +28,8 @@ overlay (ใน OBS) กับหน้า config เป็นคนละเบ
   `/api/easydonate/donations` proxy อ่านโดเนท (`lib/easydonate.ts`, **cache 4s** กัน rate limit 60/นาที) + รวม
   "โดเนททดสอบ" จากปุ่มทดสอบ. `/donate-alert` (overlay) **poll ทุก 3s**, dedupe ด้วย id (localStorage `flokz.donate.seen`),
   โดเนทใหม่ที่มาหลัง first-poll → เข้า queue เล่นทีละอัน (first-poll ไม่เล่นประวัติเก่า). รับเงินจริงเกิดที่หน้า EasyDonate — เราแค่อ่าน.
+  - **Top Donors**: `/top-donors` (overlay) marquee เลื่อนวน — `GET /api/easydonate/top?limit=` รวมยอดต่อคนจากโดเนทที่ดึงได้
+    แล้วจัดอันดับ. loop ไร้รอยต่อด้วยการ render list ซ้ำ (≥8 ชิ้น) แล้ว double + `translateX 0↔-50%`. query: `limit/speed/dir(left|right)`.
 
 ## Storage — `lib/kv.ts` (2 โหมด)
 
@@ -39,8 +41,8 @@ overlay (ใน OBS) กับหน้า config เป็นคนละเบ
 
 - `app/(dash)/` — หน้า config มี navbar + ธีม neon (`layout.tsx`); `page.tsx` (landing), `talk-setup/`, `grind/`, `donate-setup/`
 - `app/(overlay)/` — overlay OBS พื้นโปร่งใส ไม่มี chrome (`layout.tsx` ว่าง; body โปร่งใสจาก globals.css)
-  - `talk/`, `grind-overlay/[token]/`, `donate-alert/` — URL: `/talk`, `/grind-overlay/<token>`, `/donate-alert`
-- `app/api/` — `talk/`, `grind/`, `easydonate/{config,donations,test}/route.ts`
+  - `talk/`, `grind-overlay/[token]/`, `donate-alert/`, `top-donors/` — URL: `/talk`, `/grind-overlay/<token>`, `/donate-alert`, `/top-donors`
+- `app/api/` — `talk/`, `grind/`, `easydonate/{config,donations,test,top}/route.ts`
 - `lib/` — `kv.ts` (storage), `detector.ts` (template matcher), `easydonate.ts` (proxy+cache), `utils.ts`
 - `components/` — `navbar.tsx`, `ui/` (shadcn)
 - `config/` — ไฟล์ JSON ตอน dev (git-ignored, auto-created)
