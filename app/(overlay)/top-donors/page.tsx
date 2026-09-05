@@ -25,7 +25,7 @@ function TopDonorsInner() {
     let alive = true;
     const poll = async () => {
       try {
-        const j = await (await fetch(`/api/easydonate/top?limit=${limit}`, { cache: "no-store" })).json();
+        const j = await (await fetch(`/api/easydonate/top?limit=${limit}`, { cache: "no-cache" })).json();
         if (alive) setDonors(j.donors || []);
       } catch {}
     };

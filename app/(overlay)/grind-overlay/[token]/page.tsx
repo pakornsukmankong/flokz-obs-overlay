@@ -42,7 +42,7 @@ function GrindOverlayInner() {
     const poll = async () => {
       try {
         const s: { count?: number; at?: number } = await (
-          await fetch(`/api/grind?token=${encodeURIComponent(token)}`, { cache: "no-store" })
+          await fetch(`/api/grind?token=${encodeURIComponent(token)}`, { cache: "no-cache" })
         ).json();
         if (!alive) return;
         if (typeof s.count === "number") setCount((prev) => { if (prev !== s.count) setPop((p) => p + 1); return s.count!; });

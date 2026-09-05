@@ -47,7 +47,7 @@ export default function DonateSetupPage() {
     let alive = true;
     const poll = async () => {
       try {
-        const j = await (await fetch("/api/easydonate/top?limit=10", { cache: "no-store" })).json();
+        const j = await (await fetch("/api/easydonate/top?limit=10", { cache: "no-cache" })).json();
         if (alive) setTopPreview(j.donors && j.donors.length ? j.donors : SAMPLE_TOP);
       } catch { if (alive) setTopPreview(SAMPLE_TOP); }
     };

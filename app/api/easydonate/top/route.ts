@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import { fetchDonations } from "@/lib/easydonate";
+import { jsonEtag } from "@/lib/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// รวมยอดโดเนทต่อคน → จัดอันดับ (จากโดเนทที่ดึงได้ + โดเนททดสอบ)
+// รวมยอดโดเนทต่อคน → จัดอันดับ (จากโดเนทที่ดึงได้ + โดเนททดสอบ) — overlay poll ทุก 20s
 export async function GET(req: Request) {
   const limit = Math.min(30, Math.max(1, Number(new URL(req.url).searchParams.get("limit")) || 10));
   const donations = await fetchDonations();
@@ -17,5 +17,5 @@ export async function GET(req: Request) {
     map.set(key, cur);
   }
   const donors = [...map.values()].sort((a, b) => b.total - a.total).slice(0, limit);
-  return NextResponse.json({ donors });
+  return jsonEtag(req, { donors });
 }

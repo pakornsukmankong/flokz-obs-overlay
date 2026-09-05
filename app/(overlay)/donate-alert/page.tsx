@@ -37,7 +37,7 @@ export default function DonateAlertPage() {
     let alive = true, first = true;
     const poll = async () => {
       try {
-        const j = await (await fetch("/api/easydonate/donations", { cache: "no-store" })).json();
+        const j = await (await fetch("/api/easydonate/donations", { cache: "no-cache" })).json();
         if (!alive) return;
         cfgRef.current = { durationMs: j.durationMs || 6000, minAmount: j.minAmount || 0, tts: j.tts !== false, voiceURI: j.voiceURI ?? null, rate: j.rate || 1 };
         const ordered: Donation[] = [...(j.donations || [])].sort((a, b) => a.createdAt - b.createdAt);

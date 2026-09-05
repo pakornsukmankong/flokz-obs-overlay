@@ -28,7 +28,9 @@ export default function TalkOverlayPage() {
     let lastJson = "";
     const load = async () => {
       try {
-        const c: Cfg = await (await fetch("/api/talk", { cache: "no-store" })).json();
+        // no-cache (ไม่ใช่ no-store): ให้เบราว์เซอร์แนบ If-None-Match เอง แล้วใช้ body ที่แคชไว้
+        // ตอนได้ 304 กลับมา — กันโหลดรูป avatar ซ้ำทุก poll ทั้งที่ยังไม่เปลี่ยน
+        const c: Cfg = await (await fetch("/api/talk", { cache: "no-cache" })).json();
         if (!alive) return;
         const j = JSON.stringify(c);
         if (j !== lastJson) { lastJson = j; setCfg(c); cfgRef.current = { threshold: c.threshold, hold: c.hold }; }
