@@ -2,7 +2,8 @@
 
 import { CSSProperties, useEffect, useRef, useState } from "react";
 
-type Cfg = { talking: string | null; idle: string | null; threshold: number; hold: number };
+type Cfg = { talking: string | null; idle: string | null; threshold: number; hold: number; version?: string };
+type Meta = { version: string; threshold: number; hold: number; hasIdle: boolean; hasTalking: boolean };
 
 const imgBase: CSSProperties = {
   position: "absolute",
@@ -22,24 +23,41 @@ export default function TalkOverlayPage() {
   const [hint, setHint] = useState("");
   const cfgRef = useRef({ threshold: 0.05, hold: 180 });
 
-  // โหลด config + poll ทุก 3 วิ (แทน realtime — พอสำหรับ avatar)
+  // โหลดรูปเต็มครั้งเดียวตอนเปิด แล้ว poll แค่ "เวอร์ชัน" (เบามาก ไม่มีรูป) ทุก 3 วิ
+  // ดึงรูปเต็มใหม่เฉพาะตอน version เปลี่ยนจริงเท่านั้น — ไม่พึ่งพา HTTP cache ของเบราว์เซอร์เลย
+  // (เบราว์เซอร์ในตัว OBS บางเวอร์ชันไม่ honor conditional cache แบบเดียวกับเบราว์เซอร์ปกติ)
   useEffect(() => {
     let alive = true;
-    let lastJson = "";
-    const load = async () => {
+    let curVersion = "";
+    let iv: ReturnType<typeof setInterval> | undefined;
+
+    const loadFull = async () => {
+      const c: Cfg = await (await fetch("/api/talk", { cache: "no-store" })).json();
+      if (!alive) return;
+      curVersion = c.version || "";
+      setCfg(c);
+      cfgRef.current = { threshold: c.threshold, hold: c.hold };
+      setHint(!c.idle && !c.talking ? "ยังไม่ได้ตั้งค่ารูป — เปิด /talk-setup" : "");
+    };
+
+    const poll = async () => {
       try {
-        // no-cache (ไม่ใช่ no-store): ให้เบราว์เซอร์แนบ If-None-Match เอง แล้วใช้ body ที่แคชไว้
-        // ตอนได้ 304 กลับมา — กันโหลดรูป avatar ซ้ำทุก poll ทั้งที่ยังไม่เปลี่ยน
-        const c: Cfg = await (await fetch("/api/talk", { cache: "no-cache" })).json();
+        const m: Meta = await (await fetch("/api/talk?meta=1", { cache: "no-store" })).json();
         if (!alive) return;
-        const j = JSON.stringify(c);
-        if (j !== lastJson) { lastJson = j; setCfg(c); cfgRef.current = { threshold: c.threshold, hold: c.hold }; }
-        if (!c.idle && !c.talking) setHint("ยังไม่ได้ตั้งค่ารูป — เปิด /talk-setup");
+        if (m.version !== curVersion) { await loadFull(); return; } // รูปเปลี่ยน — ดึงเต็มใหม่
+        // เวอร์ชันเดิม: อัปเดตแค่ threshold/hold (เบามาก) ไม่แตะรูป
+        cfgRef.current = { threshold: m.threshold, hold: m.hold };
+        setHint(!m.hasIdle && !m.hasTalking ? "ยังไม่ได้ตั้งค่ารูป — เปิด /talk-setup" : "");
       } catch {}
     };
-    load();
-    const iv = setInterval(load, 3000);
-    return () => { alive = false; clearInterval(iv); };
+
+    (async () => {
+      await loadFull();
+      if (!alive) return;
+      iv = setInterval(poll, 3000);
+    })();
+
+    return () => { alive = false; if (iv) clearInterval(iv); };
   }, []);
 
   // ไมค์
