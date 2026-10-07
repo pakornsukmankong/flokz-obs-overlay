@@ -1,7 +1,7 @@
 /**
  * easydonate.ts — ดึงโดเนทจาก EasyDonate (read:donations) แบบ server-side
  *   - API key เก็บใน KV (ไม่โผล่ client)
- *   - cache 4s กัน rate limit 60/นาที
+ *   - cache 4s (ในหน่วยความจำ) กัน rate limit 60/นาที — ไม่เขียนลง KV เพื่อประหยัด command
  *   - รวม "โดเนททดสอบ" (จากปุ่มทดสอบ) เพื่อ preview overlay ได้โดยไม่ต้องมีโดเนทจริง
  */
 import { kvGet, kvSet } from "@/lib/kv";
@@ -24,7 +24,8 @@ export type DonateConfig = {
   rate: number;
 };
 
-export const K = { config: "donate:config", cache: "donate:cache", test: "donate:test" };
+export const K = { config: "donate:config", test: "donate:test" };
+const CONFIG_MAX_AGE = 30000, TEST_MAX_AGE = 5000; // ยอมใช้ค่าใน memory ของ instance นานเท่านี้ (ms)
 export const DEFAULT_CONFIG: DonateConfig = {
   apiKey: null, minAmount: 0, durationMs: 6000, tts: true, voiceURI: null, rate: 1,
 };
@@ -34,7 +35,7 @@ export const API_BASE = process.env.EASYDONATE_API_BASE || "https://api.easydona
 const API_URL = `${API_BASE}/donations?limit=20`;
 
 export async function getConfig(): Promise<DonateConfig> {
-  return { ...DEFAULT_CONFIG, ...((await kvGet<Partial<DonateConfig>>(K.config)) ?? {}) };
+  return { ...DEFAULT_CONFIG, ...((await kvGet<Partial<DonateConfig>>(K.config, CONFIG_MAX_AGE)) ?? {}) };
 }
 export async function saveConfig(cfg: DonateConfig): Promise<void> {
   await kvSet(K.config, cfg);
@@ -69,14 +70,16 @@ export function parseDonationsResponse(json: unknown): Donation[] {
     .filter((x): x is Donation => !!x);
 }
 
+let cache: { at: number; key: string; items: Donation[] } | null = null;
+
 async function fetchReal(apiKey: string): Promise<Donation[]> {
-  const cache = await kvGet<{ at: number; items: Donation[] }>(K.cache);
+  if (cache && cache.key !== apiKey) cache = null;
   if (cache && Date.now() - cache.at < 4000) return cache.items;
   try {
     const res = await fetch(API_URL, { headers: { Authorization: `Bearer ${apiKey}` }, cache: "no-store" });
     if (!res.ok) return cache?.items ?? [];
     const items = parseDonationsResponse(await res.json());
-    await kvSet(K.cache, { at: Date.now(), items }, 60);
+    cache = { at: Date.now(), key: apiKey, items };
     return items;
   } catch {
     return cache?.items ?? [];
@@ -87,7 +90,7 @@ async function fetchReal(apiKey: string): Promise<Donation[]> {
 export async function fetchDonations(): Promise<Donation[]> {
   const cfg = await getConfig();
   const real = cfg.apiKey ? await fetchReal(cfg.apiKey) : [];
-  const test = (await kvGet<Donation[]>(K.test)) ?? [];
+  const test = (await kvGet<Donation[]>(K.test, TEST_MAX_AGE)) ?? [];
   return [...real, ...test].sort((a, b) => b.createdAt - a.createdAt).slice(0, 30);
 }
 

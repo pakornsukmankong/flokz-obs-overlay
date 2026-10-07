@@ -52,7 +52,7 @@ export default function DonateSetupPage() {
       } catch { if (alive) setTopPreview(SAMPLE_TOP); }
     };
     poll();
-    const iv = setInterval(poll, 8000);
+    const iv = setInterval(poll, 30000);
     return () => { alive = false; clearInterval(iv); };
   }, []);
 

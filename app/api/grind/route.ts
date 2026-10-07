@@ -11,11 +11,11 @@ const TTL = 86400; // เก็บ 1 วัน
 function key(token: string) { return `grind:${token}`; }
 function valid(t: string | null): t is string { return !!t && /^[A-Za-z0-9_-]{1,64}$/.test(t); }
 
-// overlay poll ค่า count ล่าสุดของ token ทุก 1.5s ตลอดที่เปิด OBS
+// overlay poll ค่า count ล่าสุดของ token ทุก 3s ตลอดที่เปิด OBS
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get("token");
   if (!valid(token)) return jsonEtag(req, { count: 0, lastAt: null, at: 0 });
-  const s = (await kvGet<GrindState>(key(token))) ?? { count: 0, lastAt: null, at: 0 };
+  const s = (await kvGet<GrindState>(key(token), 2500)) ?? { count: 0, lastAt: null, at: 0 };
   return jsonEtag(req, s);
 }
 

@@ -23,7 +23,7 @@ export default function TalkOverlayPage() {
   const [hint, setHint] = useState("");
   const cfgRef = useRef({ threshold: 0.05, hold: 180 });
 
-  // โหลดรูปเต็มครั้งเดียวตอนเปิด แล้ว poll แค่ "เวอร์ชัน" (เบามาก ไม่มีรูป) ทุก 3 วิ
+  // โหลดรูปเต็มครั้งเดียวตอนเปิด แล้ว poll แค่ "เวอร์ชัน" (เบามาก ไม่มีรูป) ทุก 10 วิ
   // ดึงรูปเต็มใหม่เฉพาะตอน version เปลี่ยนจริงเท่านั้น — ไม่พึ่งพา HTTP cache ของเบราว์เซอร์เลย
   // (เบราว์เซอร์ในตัว OBS บางเวอร์ชันไม่ honor conditional cache แบบเดียวกับเบราว์เซอร์ปกติ)
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function TalkOverlayPage() {
     (async () => {
       await loadFull();
       if (!alive) return;
-      iv = setInterval(poll, 3000);
+      iv = setInterval(poll, 10000);
     })();
 
     return () => { alive = false; if (iv) clearInterval(iv); };

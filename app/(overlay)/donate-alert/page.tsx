@@ -52,7 +52,7 @@ export default function DonateAlertPage() {
       } catch {}
     };
     poll();
-    const iv = setInterval(poll, 3000);
+    const iv = setInterval(poll, 5000);
     return () => { alive = false; clearInterval(iv); };
   }, []);
 

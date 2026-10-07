@@ -51,7 +51,7 @@ npm run dev        # → http://localhost:3100
 3. กด **ส่ง alert ทดสอบ** เพื่อลอง (เห็น **preview ในหน้า setup เลย** + ได้ยินเสียงถ้าเปิด TTS) แล้วเอา `/donate-alert` ไปใส่ OBS
 - **อ่านออกเสียง (TTS)** เปิด/ปิดได้ — ใช้ `SpeechSynthesis` ของเบราว์เซอร์ อ่าน "ชื่อ โดเนท ยอด บาท + ข้อความ" (เสียงไทยขึ้นกับ voice ที่เครื่อง/OBS มี)
 - **Top Donors overlay** `/top-donors` — แถบอันดับยอดโดเนทรวม วิ่งวน (marquee) ไม่สะดุด; ปรับได้ด้วย query `?limit=10&speed=30&dir=right` (`dir=left` เลื่อนซ้าย)
-- server proxy อ่านโดเนทแล้ว **cache 4s กัน rate limit 60/นาที** ของ EasyDonate
+- server proxy อ่านโดเนทแล้ว **cache 4s (ใน memory) กัน rate limit 60/นาที** ของ EasyDonate
 - overlay อ่านโดเนทมาโชว์เท่านั้น — **การรับเงินจริงเกิดที่หน้า donation page ของ EasyDonate** (ไม่ได้ตัดเงินผ่านที่นี่)
 
 ---
