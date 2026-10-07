@@ -18,15 +18,16 @@ Stack: **Next.js 15 (App Router) + React 19 + TypeScript + Tailwind + shadcn/ui*
 overlay (ใน OBS) กับหน้า config เป็นคนละเบราว์เซอร์ → คุยกันผ่าน **API + polling** (ไม่ใช้ realtime):
 
 - **Talk**: `/talk-setup` อัปโหลดรูป (ย่อ ≤700px เป็น data URL) + ปรับ threshold/hold → `POST /api/talk`.
-  `/talk` (overlay) โหลด config, เปิดไมค์ (Web Audio RMS), rms>threshold → สลับรูป, **poll `/api/talk` ทุก 3s**.
+  `/talk` (overlay) โหลด config, เปิดไมค์ (Web Audio RMS), rms>threshold → สลับรูป, โหลดรูปเต็มครั้งเดียว แล้ว
+  **poll `/api/talk?meta=1` ทุก 10s** (key เล็ก `talk:meta` ไม่มีรูป) — ดึงรูปเต็มใหม่เฉพาะตอน version เปลี่ยน.
 - **Grind**: `/grind` จับหน้าจอ (getDisplayMedia) → detect "MISSION START" (template matching ใน
   module worker `app/(dash)/grind/scan.worker.ts`) → นับรอบ → **`POST /api/grind` {token,count}** ทุกครั้งที่
-  count เปลี่ยน + heartbeat 5s. `/grind-overlay/[token]` (overlay) **poll `GET /api/grind?token=` ทุก 1.5s**
-  โชว์เลข (จุด live เขียวถ้า `at` สดกว่า 20s). count เก็บใน localStorage ของหน้า counter ด้วย.
+  count เปลี่ยน + heartbeat 15s. `/grind-overlay/[token]` (overlay) **poll `GET /api/grind?token=` ทุก 3s**
+  โชว์เลข (จุด live เขียวถ้า `at` สดกว่า 45s). count เก็บใน localStorage ของหน้า counter ด้วย.
 
 - **Donate**: `/donate-setup` วาง EasyDonate API key (scope `read:donations`) → เก็บใน KV (ฝั่ง server, ไม่โผล่ client).
-  `/api/easydonate/donations` proxy อ่านโดเนท (`lib/easydonate.ts`, **cache 4s** กัน rate limit 60/นาที) + รวม
-  "โดเนททดสอบ" จากปุ่มทดสอบ. `/donate-alert` (overlay) **poll ทุก 3s**, dedupe ด้วย id (localStorage `flokz.donate.seen`),
+  `/api/easydonate/donations` proxy อ่านโดเนท (`lib/easydonate.ts`, **cache 4s ใน memory** กัน rate limit 60/นาที) + รวม
+  "โดเนททดสอบ" จากปุ่มทดสอบ. `/donate-alert` (overlay) **poll ทุก 5s**, dedupe ด้วย id (localStorage `flokz.donate.seen`),
   โดเนทใหม่ที่มาหลัง first-poll → เข้า queue เล่นทีละอัน (first-poll ไม่เล่นประวัติเก่า). รับเงินจริงเกิดที่หน้า EasyDonate — เราแค่อ่าน.
   - **Top Donors**: `/top-donors` (overlay) marquee เลื่อนวน — `GET /api/easydonate/top?limit=` รวมยอดต่อคนจากโดเนทที่ดึงได้
     แล้วจัดอันดับ. loop ไร้รอยต่อด้วยการ render list ซ้ำ (≥8 ชิ้น) แล้ว double + `translateX 0↔-50%`. query: `limit/speed/dir(left|right)`.
@@ -35,7 +36,9 @@ overlay (ใน OBS) กับหน้า config เป็นคนละเบ
 
 - มี env `KV_REST_API_URL` (บน Vercel) → ใช้ **Vercel KV** (`@vercel/kv`, dynamic import)
 - ไม่มี env (dev ในเครื่อง) → เขียนไฟล์ JSON ใน `./config` (zero-setup)
-- keys: `talk` (config), `grind:<token>` (state, TTL 1 วัน), `donate:config`/`donate:cache`/`donate:test`
+- keys: `talk` (config+รูป), `talk:meta` (version+ตัวเลข), `grind:<token>` (state, TTL 1 วัน), `donate:config`/`donate:test`
+- **ประหยัด quota Upstash free** (จำกัด command + bandwidth ต่อเดือน): endpoint ที่ overlay poll ต้องอ่านผ่าน
+  `kvGet(key, maxAgeMs)` (cache ใน memory ของ instance) และห้ามอ่าน key ที่มีรูปใน path ที่ poll ถี่
 
 ## โครงสร้าง
 
@@ -67,5 +70,5 @@ Vercel: Import repo → Storage → connect Upstash KV → redeploy (ดู READ
 
 - getDisplayMedia (grind) / getUserMedia (talk) ต้องเป็นแท็บเบราว์เซอร์จริง (https/localhost);
   ถ้าใน OBS ไม่ทำงาน ให้เปิดใน browser ปกติแล้วใช้ Window Capture
-- อัปเดต overlay ไม่ทันที (polling 1.5–3s) — เหมาะกับ counter/avatar อยู่แล้ว
+- อัปเดต overlay ไม่ทันที (polling 3–10s + cache ฝั่ง server) — เหมาะกับ counter/avatar อยู่แล้ว
 - รูป avatar เก็บเป็น data URL ใน KV; ถ้าใหญ่เกิน limit ของ KV ให้ย้ายไป Vercel Blob

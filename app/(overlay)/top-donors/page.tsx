@@ -30,7 +30,7 @@ function TopDonorsInner() {
       } catch {}
     };
     poll();
-    const iv = setInterval(poll, 20000);
+    const iv = setInterval(poll, 60000);
     return () => { alive = false; clearInterval(iv); };
   }, [limit]);
 

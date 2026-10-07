@@ -16,7 +16,7 @@ import {
 
 const DEFAULT_REGION: Region = { x: 35.4, y: 16.2, w: 24.5, h: 16.7 };
 const DEFAULT_CUTOFF = 140, DEFAULT_MIN_SCORE = 0.6, DEFAULT_MIN_GAP = 10;
-const SAMPLE_MS = 400, CONFIRM_FRAMES = 2, RELEASE_RATIO = 0.7, GAP_WARN_MS = 2500, OVERLAY_BEAT_MS = 5000;
+const SAMPLE_MS = 400, CONFIRM_FRAMES = 2, RELEASE_RATIO = 0.7, GAP_WARN_MS = 2500, OVERLAY_BEAT_MS = 15000;
 const TUNING_VERSION = 3;
 const LS_REGION = "flokz-grind-region", LS_TUNING = "flokz-grind-tuning", LS_RUNS = "flokz-grind-runs", LS_OVERLAY = "flokz-grind-overlay";
 

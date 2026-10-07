@@ -26,7 +26,22 @@ async function kvClient(): Promise<KvClient> {
   return client;
 }
 
-export async function kvGet<T>(key: string): Promise<T | null> {
+// cache ในหน่วยความจำของ instance (function ที่ยัง warm ใช้ซ้ำได้) — overlay poll ถี่ตลอดที่เปิด OBS
+// ถ้าทุก poll ยิง KV ตรงๆ จะชน limit ของ Upstash free (จำนวน command + bandwidth ต่อเดือน)
+const mem = new Map<string, { at: number; value: unknown }>();
+
+/** maxAgeMs > 0 = ยอมใช้ค่าที่เพิ่งอ่าน/เขียนใน instance นี้ภายในช่วงเวลานั้น แทนการยิง KV ใหม่ */
+export async function kvGet<T>(key: string, maxAgeMs = 0): Promise<T | null> {
+  if (maxAgeMs > 0) {
+    const hit = mem.get(key);
+    if (hit && Date.now() - hit.at < maxAgeMs) return hit.value as T | null;
+  }
+  const value = await kvRead<T>(key);
+  mem.set(key, { at: Date.now(), value });
+  return value;
+}
+
+async function kvRead<T>(key: string): Promise<T | null> {
   if (useKV) {
     const c = await kvClient();
     return (await c.get<T>(key)) ?? null;
@@ -39,6 +54,11 @@ export async function kvGet<T>(key: string): Promise<T | null> {
 }
 
 export async function kvSet(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
+  await kvWrite(key, value, ttlSeconds);
+  mem.set(key, { at: Date.now(), value });
+}
+
+async function kvWrite(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
   if (useKV) {
     const c = await kvClient();
     await c.set(key, value, ttlSeconds ? { ex: ttlSeconds } : undefined);

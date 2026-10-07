@@ -4,7 +4,7 @@ import { jsonEtag } from "@/lib/http";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// รวมยอดโดเนทต่อคน → จัดอันดับ (จากโดเนทที่ดึงได้ + โดเนททดสอบ) — overlay poll ทุก 20s
+// รวมยอดโดเนทต่อคน → จัดอันดับ (จากโดเนทที่ดึงได้ + โดเนททดสอบ) — overlay poll ทุก 60s
 export async function GET(req: Request) {
   const limit = Math.min(30, Math.max(1, Number(new URL(req.url).searchParams.get("limit")) || 10));
   const donations = await fetchDonations();

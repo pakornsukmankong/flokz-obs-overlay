@@ -3,7 +3,7 @@
 import { CSSProperties, Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
-const STALE_MS = 20000;
+const STALE_MS = 45000; // heartbeat จากหน้า counter มาทุก 15s
 const ALIGN: Record<string, string> = { left: "flex-start", center: "center", right: "flex-end" };
 const JUSTIFY: Record<string, string> = { top: "flex-start", middle: "center", bottom: "flex-end" };
 
@@ -36,7 +36,7 @@ function GrindOverlayInner() {
   const [live, setLive] = useState(false);
   const [pop, setPop] = useState(0);
 
-  // poll count ของ token นี้ทุก 1.5 วิ (แทน realtime)
+  // poll count ของ token นี้ทุก 3 วิ (แทน realtime)
   useEffect(() => {
     let alive = true;
     const poll = async () => {
@@ -50,7 +50,7 @@ function GrindOverlayInner() {
       } catch {}
     };
     poll();
-    const iv = setInterval(poll, 1500);
+    const iv = setInterval(poll, 3000);
     return () => { alive = false; clearInterval(iv); };
   }, [token]);
 
